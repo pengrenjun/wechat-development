@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--这个文件的作用是整合spring和mybatis，主要功能是自动扫描，自动注入，配置数据库等-->
+
+    <!-- 自动扫描，注意这个指的是要包的前缀，注意这个设置不要设错了，比如后面加了项目名，那就是错的 -->
+    <context:component-scan base-package="com.wechat.service.serviceImpl" />
+    <!-- 引入数据库连接的配置文件 -->
+    <bean id="propertyConfigurer"
+          class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="location" value="classpath:jdbc.properties" />
+    </bean>
+
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+          destroy-method="close">
+        <property name="driverClassName" value="${driver}" />
+        <property name="url" value="${url}" />
+        <property name="username" value="${username}" />
+        <property name="password" value="${password}" />
+        <!-- 初始化连接大小 -->
+        <property name="initialSize" value="${initialSize}"></property>
+        <!-- 连接池最大数量 -->
+        <property name="maxActive" value="${maxActive}"></property>
+        <!-- 连接池最大空闲 -->
+        <property name="maxIdle" value="${maxIdle}"></property>
+        <!-- 连接池最小空闲 -->
+        <property name="minIdle" value="${minIdle}"></property>
+        <!-- 获取连接最大等待时间 -->
+        <property name="maxWait" value="${maxWait}"></property>
+    </bean>
+
+    <!-- spring和MyBatis完美整合，不需要mybatis的配置映射文件 -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <!-- 自动扫描mapping.xml文件，注意这个也是包的路径，这些路径都跟什么src..或者项目名没关系，纯粹就是包名开始计算 -->
+        <property name="mapperLocations" value="classpath:com/wechat/mapper/mapperXml/*.xml"></property>
+    </bean>
+
+    <!-- DAO接口（mapper接口）所在包名，Spring会自动查找其下的类，注意是包名 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.wechat.mapper" />
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+    </bean>
+
+    <!-- (事务管理)transaction manager, use JtaTransactionManager for global tx -->
+    <bean id="transactionManager"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <!-- 拦截器方式配置事物 -->
+    <tx:advice id="transactionAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="add*" propagation="REQUIRED" />
+            <tx:method name="append*" propagation="REQUIRED" />
+            <tx:method name="insert*" propagation="REQUIRED" />
+            <tx:method name="save*" propagation="REQUIRED" />
+            <tx:method name="update*" propagation="REQUIRED" />
+            <tx:method name="modify*" propagation="REQUIRED" />
+            <tx:method name="edit*" propagation="REQUIRED" />
+            <tx:method name="delete*" propagation="REQUIRED" />
+            <tx:method name="remove*" propagation="REQUIRED" />
+            <tx:method name="repair" propagation="REQUIRED" />
+            <tx:method name="delAndRepair" propagation="REQUIRED" />
+            <tx:method name="get*" propagation="SUPPORTS" />
+            <tx:method name="find*" propagation="SUPPORTS" />
+            <tx:method name="load*" propagation="SUPPORTS" />
+            <tx:method name="search*" propagation="SUPPORTS" />
+            <tx:method name="datagrid*" propagation="SUPPORTS" />
+            <tx:method name="*" propagation="SUPPORTS" />
+        </tx:attributes>
+    </tx:advice>
+   <!--<aop:config>
+        <aop:pointcut id="transactionPointcut" expression="execution(* com.wechat.service.*..*Impl.*(..))" />
+        <aop:advisor pointcut-ref="transactionPointcut" advice-ref="transactionAdvice" />
+    </aop:config>-->
+
+    <!-- 配置 druid 监控 spring jdbc -->
+   <!-- <bean id="druid-stat-interceptor" class="com.alibaba.druid.support.spring.stat.DruidStatInterceptor">
+    </bean>
+    <bean id="druid-stat-pointcut" class="org.springframework.aop.support.JdkRegexpMethodPointcut" scope="prototype">
+        <property name="patterns">
+            <list>
+                <value>weixin.service.*</value>
+            </list>
+        </property>
+    </bean>
+    <aop:config>
+        <aop:advisor advice-ref="druid-stat-interceptor" pointcut-ref="druid-stat-pointcut" />
+    </aop:config>-->
+
+</beans>
